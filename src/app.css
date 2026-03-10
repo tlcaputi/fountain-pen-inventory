@@ -1,0 +1,77 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+	/* Light mode colors (defaults) */
+	--color-background: #FAFAF8;
+	--color-foreground: #1A1A1A;
+	--color-card: #FFFFFF;
+	--color-card-foreground: #1A1A1A;
+	--color-primary: #1E3A5F;
+	--color-primary-foreground: #FFFFFF;
+	--color-secondary: #F0EDE8;
+	--color-secondary-foreground: #3D3D3D;
+	--color-accent: #D4AF37;
+	--color-accent-foreground: #1A1A1A;
+	--color-muted: #E8E4DE;
+	--color-muted-foreground: #737373;
+	--color-destructive: #B91C1C;
+	--color-destructive-foreground: #FFFFFF;
+	--color-success: #15803D;
+	--color-border: #E0DCD6;
+	--color-input: #E0DCD6;
+	--color-ring: #1E3A5F;
+
+	/* Typography */
+	--font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+	--font-serif: 'Lora', Georgia, 'Times New Roman', serif;
+
+	/* Border radius */
+	--radius-sm: 0.25rem;
+	--radius-md: 0.375rem;
+	--radius-lg: 0.5rem;
+	--radius-xl: 0.75rem;
+}
+
+/* Dark mode color overrides */
+.dark {
+	--color-background: #121210;
+	--color-foreground: #E8E4DE;
+	--color-card: #1C1C1A;
+	--color-card-foreground: #E8E4DE;
+	--color-primary: #4A8AC7;
+	--color-primary-foreground: #FFFFFF;
+	--color-secondary: #2A2A28;
+	--color-secondary-foreground: #C4C0BA;
+	--color-accent: #D4AF37;
+	--color-accent-foreground: #1A1A1A;
+	--color-muted: #3D3D3A;
+	--color-muted-foreground: #8A8A85;
+	--color-destructive: #DC2626;
+	--color-destructive-foreground: #FFFFFF;
+	--color-success: #22C55E;
+	--color-border: #3D3D3A;
+	--color-input: #3D3D3A;
+	--color-ring: #4A8AC7;
+}
+
+/* Base styles */
+html {
+	font-family: var(--font-sans);
+	color: var(--color-foreground);
+	background-color: var(--color-background);
+}
+
+body {
+	min-height: 100vh;
+	margin: 0;
+}
+
+/* Prevent flash of wrong theme */
+html:not(.dark) {
+	color-scheme: light;
+}
+html.dark {
+	color-scheme: dark;
+}
