@@ -15,7 +15,7 @@
 </script>
 
 <svelte:head>
-	<title>Fountain Pen Inventory</title>
+	<title>PenVault</title>
 	<meta name="description" content="Catalog, review, and manage your fountain pen collection" />
 	<link rel="preconnect" href="https://fonts.googleapis.com" />
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />

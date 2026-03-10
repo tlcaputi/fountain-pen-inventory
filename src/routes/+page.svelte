@@ -73,8 +73,8 @@
 		<div class="w-full max-w-sm">
 			<!-- Logo -->
 			<div class="mb-8 text-center">
-				<h1 class="font-serif text-3xl font-bold text-foreground">Fountain Pen Inventory</h1>
-				<p class="mt-2 text-sm text-muted-foreground">Your collection, cataloged.</p>
+				<h1 class="font-serif text-3xl font-bold text-foreground">PenVault</h1>
+				<p class="mt-2 text-sm text-muted-foreground">Your collection, secured.</p>
 			</div>
 
 			<!-- Card -->
@@ -221,7 +221,7 @@
 			</div>
 
 			<p class="mt-6 text-center text-xs text-muted-foreground">
-				Based on <span class="font-medium">Fountain Pen Inventory</span> by Jon Rosen
+				Inspired by <span class="font-medium">Fountain Pen Inventory</span> by Jon Rosen
 			</p>
 		</div>
 	</div>
