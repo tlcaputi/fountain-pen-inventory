@@ -53,22 +53,30 @@ CREATE POLICY collection_pens_owner ON collection_pens
     SELECT 1 FROM collections c WHERE c.id = collection_id AND c.user_id = auth.uid()
   ));
 
--- Collaborators with collection-level edit can manage pens
-CREATE POLICY collection_pens_collaborator ON collection_pens
+-- Collaborators with collection-level or account-level edit can manage pens
+CREATE POLICY "Collaborators can manage collection_pens" ON collection_pens
   FOR ALL TO authenticated
   USING (EXISTS (
-    SELECT 1 FROM collaborators col
-    WHERE col.collaborator_id = auth.uid()
-      AND col.scope = 'collection'
-      AND col.collection_id = collection_pens.collection_id
-      AND col.permission = 'edit'
+    SELECT 1 FROM collaborators
+    WHERE collaborators.collaborator_id = auth.uid()
+      AND collaborators.permission = 'edit'
+      AND (
+        (collaborators.scope = 'collection' AND collaborators.collection_id = collection_pens.collection_id)
+        OR (collaborators.scope = 'account' AND collaborators.owner_id = (
+          SELECT c.user_id FROM collections c WHERE c.id = collection_pens.collection_id
+        ))
+      )
   ))
   WITH CHECK (EXISTS (
-    SELECT 1 FROM collaborators col
-    WHERE col.collaborator_id = auth.uid()
-      AND col.scope = 'collection'
-      AND col.collection_id = collection_pens.collection_id
-      AND col.permission = 'edit'
+    SELECT 1 FROM collaborators
+    WHERE collaborators.collaborator_id = auth.uid()
+      AND collaborators.permission = 'edit'
+      AND (
+        (collaborators.scope = 'collection' AND collaborators.collection_id = collection_pens.collection_id)
+        OR (collaborators.scope = 'account' AND collaborators.owner_id = (
+          SELECT c.user_id FROM collections c WHERE c.id = collection_pens.collection_id
+        ))
+      )
   ));
 
 -- Anon can read pens in public collections
@@ -99,6 +107,14 @@ CREATE TABLE IF NOT EXISTS collaborators (
 );
 
 ALTER TABLE collaborators ENABLE ROW LEVEL SECURITY;
+
+-- Prevent duplicate grants
+CREATE UNIQUE INDEX IF NOT EXISTS idx_collaborators_account
+  ON collaborators (owner_id, collaborator_id) WHERE scope = 'account';
+CREATE UNIQUE INDEX IF NOT EXISTS idx_collaborators_collection
+  ON collaborators (owner_id, collaborator_id, collection_id) WHERE scope = 'collection';
+CREATE UNIQUE INDEX IF NOT EXISTS idx_collaborators_pen
+  ON collaborators (owner_id, collaborator_id, pen_id) WHERE scope = 'pen';
 
 -- Owner can manage their collaborators
 CREATE POLICY collaborators_owner ON collaborators
