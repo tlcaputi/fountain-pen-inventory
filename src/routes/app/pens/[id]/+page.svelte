@@ -84,7 +84,7 @@
 		];
 		const numFields = [
 			'condition_rating', 'repair_cost', 'purchase_price', 'shipping_cost',
-			'retail_price', 'selling_price', 'current_value', 'quantity',
+			'retail_price', 'selling_price', 'current_value',
 			'first_impression_rating', 'appearance_rating', 'design_rating',
 			'nib_rating', 'filling_system_rating', 'cost_and_value_rating',
 		];
@@ -282,12 +282,15 @@
 								{/each}
 							</div>
 
-							{#if pen?.purchase_price != null}
-								<div class="mt-4 flex items-baseline gap-2 border-t border-border pt-4">
-									<span class="text-2xl font-bold text-foreground">{val('purchase_price_currency') || 'USD'}{pen.purchase_price}</span>
-									{#if val('purchase_date')}
-										<span class="text-sm text-muted-foreground">purchased {val('purchase_date')}</span>
-									{/if}
+							{#if pen?.purchase_price != null || val('purchase_date')}
+								<div class="mt-3 border-t border-border pt-3">
+									<div class="flex items-baseline justify-between gap-4">
+										<span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Paid</span>
+										<span class="text-right text-sm text-muted-foreground">
+											{#if pen?.purchase_price != null}{val('purchase_price_currency') || 'USD'}{pen.purchase_price}{/if}
+											{#if val('purchase_date')}<span class="opacity-60">{pen?.purchase_price != null ? ' \u00b7 ' : ''}{val('purchase_date')}</span>{/if}
+										</span>
+									</div>
 								</div>
 							{/if}
 						</div>
@@ -440,11 +443,11 @@
 				</section>
 			{/if}
 
-			<!-- Purchase & Sale -->
+			<!-- Purchase History -->
 			{#if showPurchase || editing}
 				<section class="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
 					<button onclick={() => showPurchase = !showPurchase} class="flex w-full items-center justify-between px-5 py-4 transition-colors hover:bg-secondary/30">
-						<h2 class="font-serif text-base font-semibold text-foreground">Purchase & Sale</h2>
+						<h2 class="font-serif text-base font-semibold text-foreground">Purchase History</h2>
 						<svg class="h-5 w-5 text-muted-foreground transition-transform duration-300 {showPurchase ? 'rotate-180' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
 					</button>
 					<div class="section-expand" data-open={showPurchase}>
@@ -456,7 +459,7 @@
 											['purchase_price', 'Purchase Price'], ['purchase_price_currency', 'Currency'], ['purchase_date', 'Purchase Date'],
 											['purchased_from', 'Purchased From'], ['shipping_cost', 'Shipping'], ['retail_price', 'Retail Price'],
 											['selling_price', 'Selling Price'], ['selling_date', 'Selling Date'], ['sold_to', 'Sold To'],
-											['current_value', 'Current Value'], ['valuation_date', 'Valuation Date'], ['quantity', 'Quantity'],
+											['current_value', 'Current Value'], ['valuation_date', 'Valuation Date'],
 										] as [key, label]}
 											{#if hasVal(key)}
 												<div class="flex items-baseline justify-between gap-3">
@@ -472,7 +475,7 @@
 											['purchase_price', 'Purchase Price', 'number'], ['purchase_price_currency', 'Currency', 'text'], ['purchase_date', 'Purchase Date', 'date'],
 											['purchased_from', 'Purchased From', 'text'], ['shipping_cost', 'Shipping', 'number'], ['retail_price', 'Retail Price', 'number'],
 											['selling_price', 'Selling Price', 'number'], ['selling_date', 'Selling Date', 'date'], ['sold_to', 'Sold To', 'text'],
-											['current_value', 'Current Value', 'number'], ['valuation_date', 'Valuation Date', 'date'], ['quantity', 'Quantity', 'number'],
+											['current_value', 'Current Value', 'number'], ['valuation_date', 'Valuation Date', 'date'],
 										] as [key, label, type]}
 											<div>
 												<label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</label>
@@ -572,7 +575,7 @@
 					{#if !showPurchase}
 						<button onclick={() => showPurchase = true} class="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-border px-4 py-2.5 text-sm text-muted-foreground transition-all hover:border-primary hover:bg-primary/5 hover:text-primary">
 							<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-							Purchase & Sale
+							Purchase History
 						</button>
 					{/if}
 					{#if !showReview}
