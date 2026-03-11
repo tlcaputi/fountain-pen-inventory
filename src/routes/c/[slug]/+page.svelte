@@ -1,9 +1,7 @@
 <script lang="ts">
 	import { supabase } from '$lib/supabase';
 	import { page } from '$app/state';
-	import { goto } from '$app/navigation';
 
-	type Profile = { id: string; first_name: string | null; last_name: string | null; share_slug: string };
 	type Pen = {
 		id: string;
 		model: string | null;
@@ -14,7 +12,8 @@
 		photo_closed_url: string | null;
 	};
 
-	let profile = $state<Profile | null>(null);
+	let title = $state('');
+	let subtitle = $state('');
 	let pens = $state<Pen[]>([]);
 	let loading = $state(true);
 	let notFound = $state(false);
@@ -26,7 +25,38 @@
 		loading = true;
 		const slug = page.params.slug;
 
-		// Find the profile by slug
+		// 1. Try named collection first
+		const { data: colData } = await supabase
+			.from('collections')
+			.select('id, name, description, user_id')
+			.eq('share_slug', slug)
+			.eq('is_public', true)
+			.single();
+
+		if (colData) {
+			title = colData.name;
+			subtitle = colData.description ?? '';
+
+			// Fetch pens in this collection
+			const { data: cpData } = await supabase
+				.from('collection_pens')
+				.select('pen_id')
+				.eq('collection_id', colData.id);
+
+			if (cpData && cpData.length > 0) {
+				const penIds = cpData.map(cp => cp.pen_id);
+				const { data: penData } = await supabase
+					.from('pens')
+					.select('id, model, manufacturer, nib_stroke, color, year_made, photo_closed_url')
+					.in('id', penIds)
+					.order('model', { ascending: true });
+				if (penData) pens = penData;
+			}
+			loading = false;
+			return;
+		}
+
+		// 2. Fall back to profile-level slug (all pens)
 		const { data: profileData } = await supabase
 			.from('profiles')
 			.select('id, first_name, last_name, share_slug')
@@ -39,9 +69,11 @@
 			loading = false;
 			return;
 		}
-		profile = profileData;
 
-		// Fetch their pens
+		title = [profileData.first_name, profileData.last_name].filter(Boolean).join(' ') || 'Collector';
+		title += "'s Collection";
+		subtitle = '';
+
 		const { data: penData } = await supabase
 			.from('pens')
 			.select('id, model, manufacturer, nib_stroke, color, year_made, photo_closed_url')
@@ -51,10 +83,6 @@
 		if (penData) pens = penData;
 		loading = false;
 	}
-
-	let displayName = $derived(
-		profile ? [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Collector' : ''
-	);
 
 	let filtered = $derived.by(() => {
 		if (!search.trim()) return pens;
@@ -71,7 +99,7 @@
 </script>
 
 <svelte:head>
-	<title>{displayName ? `${displayName}'s Collection — PenVault` : 'PenVault'}</title>
+	<title>{title ? `${title} — PenVault` : 'PenVault'}</title>
 </svelte:head>
 
 <div class="mx-auto max-w-5xl px-4 py-8 md:px-6 lg:py-12">
@@ -95,8 +123,9 @@
 					<span class="font-serif text-sm font-bold">PenVault</span>
 				</a>
 			</div>
-			<h1 class="font-serif text-2xl font-bold text-foreground md:text-3xl">{displayName}'s Collection</h1>
+			<h1 class="font-serif text-2xl font-bold text-foreground md:text-3xl">{title}</h1>
 			<p class="mt-1 text-sm text-muted-foreground">
+				{#if subtitle}{subtitle} &middot; {/if}
 				{pens.length} pen{pens.length !== 1 ? 's' : ''}
 				{#if uniqueMakers > 0} &middot; {uniqueMakers} maker{uniqueMakers !== 1 ? 's' : ''}{/if}
 			</p>

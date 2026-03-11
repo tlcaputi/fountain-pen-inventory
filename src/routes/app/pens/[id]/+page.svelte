@@ -165,6 +165,30 @@
 		setTimeout(() => copiedAll = false, 2000);
 	}
 
+	// Collections this pen belongs to
+	type CollectionTag = { id: string; name: string };
+	let penCollections = $state<CollectionTag[]>([]);
+
+	$effect(() => {
+		if (!pen?.id) return;
+		loadPenCollections(pen.id as string);
+	});
+
+	async function loadPenCollections(penId: string) {
+		const { data: cpData } = await supabase
+			.from('collection_pens')
+			.select('collection_id')
+			.eq('pen_id', penId);
+		if (cpData && cpData.length > 0) {
+			const ids = cpData.map(cp => cp.collection_id);
+			const { data: cols } = await supabase
+				.from('collections')
+				.select('id, name')
+				.in('id', ids);
+			if (cols) penCollections = cols;
+		}
+	}
+
 	// Key facts to display
 	let keyFacts = $derived(
 		[
@@ -336,6 +360,22 @@
 				{/if}
 			</div>
 		</div>
+
+		<!-- Collection tags -->
+		{#if penCollections.length > 0}
+			<div class="mb-4 flex flex-wrap items-center gap-2">
+				<span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Collections:</span>
+				{#each penCollections as col}
+					<a
+						href="/app/collections/{col.id}"
+						class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+					>
+						<svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" /></svg>
+						{col.name}
+					</a>
+				{/each}
+			</div>
+		{/if}
 
 		<!-- Two-column hero -->
 		<div class="mb-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">

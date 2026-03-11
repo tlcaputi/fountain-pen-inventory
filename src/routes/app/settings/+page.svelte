@@ -93,6 +93,69 @@
 		saving = false;
 	}
 
+	// Account-level collaborators
+	type Collaborator = { id: string; collaborator_id: string; email: string };
+	let collaborators = $state<Collaborator[]>([]);
+	let collabEmail = $state('');
+	let collabAdding = $state(false);
+	let collabError = $state('');
+
+	$effect(() => { loadCollaborators(); });
+
+	async function loadCollaborators() {
+		const { data } = await supabase
+			.from('collaborators')
+			.select('id, collaborator_id')
+			.eq('owner_id', auth.user!.id)
+			.eq('scope', 'account');
+
+		if (data && data.length > 0) {
+			const ids = data.map(c => c.collaborator_id);
+			const { data: users } = await supabase.rpc('lookup_users_by_ids', { user_ids: ids });
+			collaborators = data.map(c => ({
+				...c,
+				email: users?.find((u: { id: string }) => u.id === c.collaborator_id)?.email ?? 'Unknown'
+			}));
+		} else {
+			collaborators = [];
+		}
+	}
+
+	async function addCollaborator() {
+		if (!collabEmail.trim()) return;
+		collabAdding = true;
+		collabError = '';
+		const { data: userId, error: lookupErr } = await supabase.rpc('lookup_user_by_email', { lookup_email: collabEmail.trim() });
+		if (lookupErr || !userId) {
+			collabError = 'User not found. They must have a PenVault account.';
+			collabAdding = false;
+			return;
+		}
+		if (userId === auth.user!.id) {
+			collabError = "You can't add yourself.";
+			collabAdding = false;
+			return;
+		}
+		const { error: insertErr } = await supabase.from('collaborators').insert({
+			owner_id: auth.user!.id,
+			collaborator_id: userId,
+			scope: 'account',
+			permission: 'edit',
+		});
+		if (insertErr) {
+			collabError = insertErr.message.includes('duplicate') ? 'Already a collaborator.' : insertErr.message;
+		} else {
+			collabEmail = '';
+			await loadCollaborators();
+		}
+		collabAdding = false;
+	}
+
+	async function removeCollaborator(id: string) {
+		await supabase.from('collaborators').delete().eq('id', id);
+		collaborators = collaborators.filter(c => c.id !== id);
+	}
+
 	// Storage usage
 	let storageUsed = $state(0);
 	$effect(() => {
@@ -204,6 +267,37 @@
 							<span class="text-sm text-success">{typeof window !== 'undefined' ? window.location.origin : ''}/c/{profile.share_slug}</span>
 						</div>
 					{/if}
+				</div>
+			</section>
+
+			<section class="rounded-xl border border-border bg-card p-4 md:p-6">
+				<h2 class="mb-4 font-serif text-lg font-semibold text-foreground">Account Collaborators</h2>
+				<p class="mb-4 text-sm text-muted-foreground">Give other PenVault users edit access to <strong>all</strong> your pens. For finer control, use collection-level or pen-level sharing.</p>
+				<div class="space-y-3">
+					{#each collaborators as collab}
+						<div class="flex items-center justify-between rounded-lg border border-border px-3 py-2">
+							<span class="text-sm text-foreground">{collab.email}</span>
+							<button type="button" onclick={() => removeCollaborator(collab.id)} class="text-xs text-muted-foreground hover:text-destructive">Remove</button>
+						</div>
+					{/each}
+					<div class="flex gap-2">
+						<input
+							type="email"
+							bind:value={collabEmail}
+							placeholder="collaborator@email.com"
+							class="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+							onkeydown={(e) => e.key === 'Enter' && (e.preventDefault(), addCollaborator())}
+						/>
+						<button
+							type="button"
+							onclick={addCollaborator}
+							disabled={collabAdding || !collabEmail.trim()}
+							class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+						>
+							{collabAdding ? 'Adding...' : 'Add'}
+						</button>
+					</div>
+					{#if collabError}<p class="text-sm text-destructive">{collabError}</p>{/if}
 				</div>
 			</section>
 
