@@ -191,14 +191,14 @@
 {:else if !collection}
 	<div class="text-center py-16">
 		<h2 class="text-lg font-medium text-foreground">Collection not found</h2>
-		<a href="/app/collections" class="mt-4 inline-block rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">Back to Collections</a>
+		<a href="/app/pens" class="mt-4 inline-block rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">Back to Pens</a>
 	</div>
 {:else}
 	<div class="mx-auto max-w-5xl animate-slide-up space-y-6">
 		<!-- Header -->
 		<div class="flex items-center justify-between gap-4">
 			<div class="flex items-center gap-3">
-				<a href="/app/collections" class="group flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm text-muted-foreground transition-all hover:border-primary hover:bg-primary/5 hover:text-primary">
+				<a href="/app/pens" class="group flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm text-muted-foreground transition-all hover:border-primary hover:bg-primary/5 hover:text-primary">
 					<svg class="h-4 w-4 transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
 					Back
 				</a>
