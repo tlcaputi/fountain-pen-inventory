@@ -70,12 +70,14 @@
 								onclick={() => onImageClick?.(i)}
 								class="block w-full cursor-zoom-in"
 							>
-								<img
-									src={img.url}
-									alt={img.caption}
-									class="aspect-[4/3] w-full object-cover"
-									loading={i === 0 ? 'eager' : 'lazy'}
-								/>
+								<div class="flex aspect-[4/3] items-center justify-center bg-black">
+									<img
+										src={img.url}
+										alt={img.caption}
+										class="max-h-full max-w-full object-contain"
+										loading={i === 0 ? 'eager' : 'lazy'}
+									/>
+								</div>
 							</button>
 						</div>
 					{/each}
