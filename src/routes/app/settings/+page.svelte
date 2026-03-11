@@ -18,12 +18,15 @@
 		country: string;
 		fpn_username: string;
 		preferred_currency: string;
+		collection_public: boolean;
+		share_slug: string;
 	};
 
 	let profile = $state<Profile>({
 		first_name: '', last_name: '', email: '', phone: '',
 		address1: '', address2: '', city: '', state: '', province: '',
 		zip: '', country: '', fpn_username: '', preferred_currency: 'USD',
+		collection_public: false, share_slug: '',
 	});
 	let loading = $state(true);
 	let saving = $state(false);
@@ -50,6 +53,8 @@
 				country: data.country ?? '',
 				fpn_username: data.fpn_username ?? '',
 				preferred_currency: data.preferred_currency ?? 'USD',
+				collection_public: data.collection_public ?? false,
+				share_slug: data.share_slug ?? '',
 			};
 		}
 		loading = false;
@@ -77,6 +82,8 @@
 				country: profile.country || null,
 				fpn_username: profile.fpn_username || null,
 				preferred_currency: profile.preferred_currency || 'USD',
+				collection_public: profile.collection_public,
+				share_slug: profile.share_slug || null,
 				updated_at: new Date().toISOString(),
 			})
 			.eq('id', auth.user!.id);
@@ -158,6 +165,45 @@
 						<label class="mb-1 block text-sm font-medium text-foreground">Preferred Currency</label>
 						<input type="text" bind:value={profile.preferred_currency} class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
 					</div>
+				</div>
+			</section>
+
+			<section class="rounded-xl border border-border bg-card p-4 md:p-6">
+				<h2 class="mb-4 font-serif text-lg font-semibold text-foreground">Public Sharing</h2>
+				<p class="mb-4 text-sm text-muted-foreground">Share your entire collection publicly. Anyone with the link can view your pens (read-only, no login needed).</p>
+				<div class="space-y-4">
+					<div class="flex items-center justify-between">
+						<label class="text-sm font-medium text-foreground">Make collection public</label>
+						<button
+							type="button"
+							onclick={() => profile.collection_public = !profile.collection_public}
+							class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 {profile.collection_public ? 'bg-primary' : 'bg-secondary'}"
+							role="switch"
+							aria-checked={profile.collection_public}
+						>
+							<span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 {profile.collection_public ? 'translate-x-5' : 'translate-x-0'}"></span>
+						</button>
+					</div>
+					<div>
+						<label class="mb-1 block text-sm font-medium text-foreground">Collection URL slug</label>
+						<div class="flex items-center gap-2">
+							<span class="text-sm text-muted-foreground">{typeof window !== 'undefined' ? window.location.origin : ''}/c/</span>
+							<input
+								type="text"
+								bind:value={profile.share_slug}
+								placeholder="my-pens"
+								pattern="[a-z0-9\-]+"
+								class="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+							/>
+						</div>
+						<p class="mt-1 text-xs text-muted-foreground">Lowercase letters, numbers, and hyphens only</p>
+					</div>
+					{#if profile.collection_public && profile.share_slug}
+						<div class="flex items-center gap-2 rounded-lg bg-success/10 px-3 py-2">
+							<svg class="h-4 w-4 flex-shrink-0 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" /></svg>
+							<span class="text-sm text-success">{typeof window !== 'undefined' ? window.location.origin : ''}/c/{profile.share_slug}</span>
+						</div>
+					{/if}
 				</div>
 			</section>
 

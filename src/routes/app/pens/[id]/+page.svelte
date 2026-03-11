@@ -117,6 +117,35 @@
 		lightboxOpen = true;
 	}
 
+	// Sharing
+	let isPublic = $state(false);
+	let shareToggling = $state(false);
+	let shareCopied = $state(false);
+
+	// Sync isPublic when pen loads
+	$effect(() => {
+		if (pen) isPublic = pen.is_public as boolean ?? false;
+	});
+
+	async function toggleShare() {
+		if (!pen) return;
+		shareToggling = true;
+		const newVal = !isPublic;
+		const { error: err } = await supabase.from('pens').update({ is_public: newVal }).eq('id', pen.id);
+		if (!err) {
+			isPublic = newVal;
+			pen = { ...pen, is_public: newVal };
+		}
+		shareToggling = false;
+	}
+
+	async function copyShareLink() {
+		const url = `${window.location.origin}/p/${pen!.id}`;
+		await navigator.clipboard.writeText(url);
+		shareCopied = true;
+		setTimeout(() => shareCopied = false, 2000);
+	}
+
 	// Image URL copy
 	let carouselIndex = $state(0);
 	let copiedOne = $state(false);
@@ -251,6 +280,35 @@
 			</div>
 			<div class="flex items-center gap-2">
 				{#if !editing}
+					<!-- Share controls -->
+					<div class="flex items-center gap-1.5">
+						<button
+							onclick={toggleShare}
+							disabled={shareToggling}
+							class="inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-medium transition-all {isPublic ? 'border-success/30 bg-success/10 text-success' : 'border-border text-muted-foreground hover:bg-secondary hover:text-foreground'}"
+							title={isPublic ? 'This pen is shared publicly' : 'Share this pen publicly'}
+						>
+							{#if isPublic}
+								<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 1 1 9 0v3.75M3.75 21.75h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H3.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" /></svg>
+							{:else}
+								<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" /></svg>
+							{/if}
+							<span class="hidden sm:inline">{isPublic ? 'Shared' : 'Share'}</span>
+						</button>
+						{#if isPublic}
+							<button
+								onclick={copyShareLink}
+								class="rounded-xl border border-border px-3 py-2 text-sm transition-colors {shareCopied ? 'border-success/30 bg-success/10 text-success' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}"
+								title="Copy public link"
+							>
+								{#if shareCopied}
+									<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+								{:else}
+									<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" /></svg>
+								{/if}
+							</button>
+						{/if}
+					</div>
 					<button
 						onclick={() => { editing = true; form = { ...pen }; }}
 						class="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/90 hover:shadow-md active:scale-[0.98]"

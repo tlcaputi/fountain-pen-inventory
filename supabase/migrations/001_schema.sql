@@ -540,6 +540,37 @@ CREATE TRIGGER on_auth_user_created
   EXECUTE FUNCTION public.handle_new_user();
 
 
--- 13. INITIAL CHANGELOG ENTRIES
+-- 13. PUBLIC SHARING
+ALTER TABLE public.pens ADD COLUMN IF NOT EXISTS is_public BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS collection_public BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS share_slug TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_profiles_share_slug ON public.profiles (share_slug) WHERE share_slug IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_pens_is_public ON public.pens (is_public) WHERE is_public = true;
+
+-- Anon read policies for public sharing
+CREATE POLICY "Anon can view public pens"
+ON public.pens FOR SELECT TO anon
+USING (
+  is_public = true
+  OR EXISTS (SELECT 1 FROM public.profiles WHERE id = pens.user_id AND collection_public = true)
+);
+
+CREATE POLICY "Anon can view photos of public pens"
+ON public.pen_photos FOR SELECT TO anon
+USING (
+  EXISTS (
+    SELECT 1 FROM public.pens
+    WHERE pens.id = pen_photos.pen_id
+    AND (pens.is_public = true
+         OR EXISTS (SELECT 1 FROM public.profiles WHERE id = pens.user_id AND collection_public = true))
+  )
+);
+
+CREATE POLICY "Anon can view public profiles"
+ON public.profiles FOR SELECT TO anon
+USING (collection_public = true);
+
+
+-- 14. INITIAL CHANGELOG ENTRIES
 INSERT INTO public.changelog (date_created, version, change) VALUES
   ('2026-03-10', '2.0.0', 'Web rebuild of Fountain Pen Inventory — launched as pens.bankbonimus.com');
