@@ -5,9 +5,11 @@
 	let {
 		images = [],
 		onImageClick,
+		onSelect: onSelectCallback,
 	}: {
 		images: { url: string; caption: string }[];
 		onImageClick?: (index: number) => void;
+		onSelect?: (index: number) => void;
 	} = $props();
 
 	let emblaRef: HTMLDivElement | undefined = $state();
@@ -36,6 +38,7 @@
 
 			const onSelect = () => {
 				selectedIndex = api.selectedScrollSnap();
+				onSelectCallback?.(selectedIndex);
 			};
 
 			api.on('select', onSelect);

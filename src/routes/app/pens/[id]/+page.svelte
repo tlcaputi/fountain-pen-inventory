@@ -118,13 +118,15 @@
 	}
 
 	// Image URL copy
-	let copiedIdx = $state<number | null>(null);
+	let carouselIndex = $state(0);
+	let copiedOne = $state(false);
 	let copiedAll = $state(false);
 
-	async function copyImageUrl(idx: number) {
-		await navigator.clipboard.writeText(allImages[idx].url);
-		copiedIdx = idx;
-		setTimeout(() => copiedIdx = null, 2000);
+	async function copyCurrentImage() {
+		if (allImages.length === 0) return;
+		await navigator.clipboard.writeText(allImages[carouselIndex].url);
+		copiedOne = true;
+		setTimeout(() => copiedOne = false, 2000);
 	}
 
 	async function copyAllBBCode() {
@@ -279,54 +281,38 @@
 
 		<!-- Two-column hero -->
 		<div class="mb-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
-			<!-- Left: Photo Carousel + URLs -->
-			<div class="space-y-3">
-				<ImageCarousel images={allImages} onImageClick={openLightbox} />
+			<!-- Left: Photo Carousel + copy buttons -->
+			<div class="space-y-2">
+				<ImageCarousel images={allImages} onImageClick={openLightbox} onSelect={(i) => carouselIndex = i} />
 
 				{#if allImages.length > 0}
-					<div class="rounded-2xl border border-border bg-card shadow-sm">
-						<div class="flex items-center justify-between px-4 py-2.5">
-							<h3 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Image URLs</h3>
-							{#if allImages.length > 1}
-								<button
-									onclick={copyAllBBCode}
-									class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors {copiedAll ? 'bg-success/10 text-success' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}"
-								>
-									{#if copiedAll}
-										<svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
-										Copied BBCode
-									{:else}
-										<svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9.75a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" /></svg>
-										Copy All (BBCode)
-									{/if}
-								</button>
+					<div class="flex gap-2">
+						<button
+							onclick={copyCurrentImage}
+							class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-medium transition-colors {copiedOne ? 'border-success/30 bg-success/10 text-success' : 'bg-card text-muted-foreground hover:bg-secondary hover:text-foreground'}"
+						>
+							{#if copiedOne}
+								<svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+								Copied!
+							{:else}
+								<svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" /></svg>
+								Copy This Image URL
 							{/if}
-						</div>
-						<div class="border-t border-border">
-							{#each allImages as img, i}
-								<div class="flex items-center gap-2 border-b border-border/50 px-4 py-2 last:border-b-0">
-									<img src={img.url} alt={img.caption} class="h-8 w-8 flex-shrink-0 rounded object-cover" />
-									<input
-										type="text"
-										readonly
-										value={img.url}
-										onclick={(e) => (e.target as HTMLInputElement).select()}
-										class="min-w-0 flex-1 truncate rounded-lg border border-input bg-background px-2.5 py-1.5 font-mono text-xs text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-									/>
-									<button
-										onclick={() => copyImageUrl(i)}
-										class="flex-shrink-0 rounded-lg p-1.5 transition-colors {copiedIdx === i ? 'text-success' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}"
-										aria-label="Copy URL"
-									>
-										{#if copiedIdx === i}
-											<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
-										{:else}
-											<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" /></svg>
-										{/if}
-									</button>
-								</div>
-							{/each}
-						</div>
+						</button>
+						{#if allImages.length > 1}
+							<button
+								onclick={copyAllBBCode}
+								class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-medium transition-colors {copiedAll ? 'border-success/30 bg-success/10 text-success' : 'bg-card text-muted-foreground hover:bg-secondary hover:text-foreground'}"
+							>
+								{#if copiedAll}
+									<svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+									Copied BBCode!
+								{:else}
+									<svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9.75a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" /></svg>
+									Copy All (BBCode)
+								{/if}
+							</button>
+						{/if}
 					</div>
 				{/if}
 			</div>
