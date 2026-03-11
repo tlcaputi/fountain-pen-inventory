@@ -1,6 +1,6 @@
 <script lang="ts">
 	import EmblaCarousel from 'embla-carousel';
-	import { onMount } from 'svelte';
+	import { tick } from 'svelte';
 
 	let {
 		images = [],
@@ -10,33 +10,44 @@
 		onImageClick?: (index: number) => void;
 	} = $props();
 
-	let emblaRef: HTMLDivElement;
+	let emblaRef: HTMLDivElement | undefined = $state();
 	let emblaApi: ReturnType<typeof EmblaCarousel> | null = null;
 	let selectedIndex = $state(0);
-	let canScrollPrev = $state(false);
-	let canScrollNext = $state(false);
 
-	onMount(() => {
-		if (!emblaRef || images.length === 0) return;
+	// Re-initialize carousel when images change or ref becomes available
+	$effect(() => {
+		const imgCount = images.length;
+		const ref = emblaRef;
 
-		const api = EmblaCarousel(emblaRef, {
-			loop: images.length > 1,
-			dragFree: false,
-			containScroll: 'trimSnaps',
+		if (!ref || imgCount === 0) {
+			if (emblaApi) { emblaApi.destroy(); emblaApi = null; }
+			return;
+		}
+
+		// Need to tick so Svelte renders the slides first
+		tick().then(() => {
+			if (emblaApi) emblaApi.destroy();
+
+			const api = EmblaCarousel(ref, {
+				loop: imgCount > 1,
+				dragFree: false,
+				containScroll: 'trimSnaps',
+			});
+
+			const onSelect = () => {
+				selectedIndex = api.selectedScrollSnap();
+			};
+
+			api.on('select', onSelect);
+			api.on('reInit', onSelect);
+			onSelect();
+
+			emblaApi = api;
 		});
 
-		const onSelect = () => {
-			selectedIndex = api.selectedScrollSnap();
-			canScrollPrev = api.canScrollPrev();
-			canScrollNext = api.canScrollNext();
+		return () => {
+			if (emblaApi) { emblaApi.destroy(); emblaApi = null; }
 		};
-
-		api.on('select', onSelect);
-		api.on('reInit', onSelect);
-		onSelect();
-
-		emblaApi = api;
-		return () => api.destroy();
 	});
 
 	function scrollPrev() { emblaApi?.scrollPrev(); }
@@ -45,66 +56,68 @@
 </script>
 
 {#if images.length > 0}
-	<div class="group relative">
-		<!-- Carousel viewport -->
-		<div class="embla rounded-2xl bg-secondary/30" bind:this={emblaRef}>
-			<div class="embla__container">
-				{#each images as img, i}
-					<div class="embla__slide">
-						<button
-							onclick={() => onImageClick?.(i)}
-							class="block w-full cursor-zoom-in"
-						>
-							<img
-								src={img.url}
-								alt={img.caption}
-								class="aspect-[4/3] w-full object-cover"
-								loading={i === 0 ? 'eager' : 'lazy'}
-							/>
-						</button>
-					</div>
-				{/each}
+	<div class="space-y-3">
+		<!-- Main carousel -->
+		<div class="group relative">
+			<div class="embla rounded-2xl" bind:this={emblaRef}>
+				<div class="embla__container">
+					{#each images as img, i}
+						<div class="embla__slide">
+							<button
+								onclick={() => onImageClick?.(i)}
+								class="block w-full cursor-zoom-in"
+							>
+								<img
+									src={img.url}
+									alt={img.caption}
+									class="aspect-[4/3] w-full object-cover"
+									loading={i === 0 ? 'eager' : 'lazy'}
+								/>
+							</button>
+						</div>
+					{/each}
+				</div>
 			</div>
+
+			<!-- Prev/Next arrows — always visible on desktop when multiple images -->
+			{#if images.length > 1}
+				<button
+					onclick={scrollPrev}
+					class="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white shadow-lg transition-all hover:bg-black/70 sm:left-3 sm:p-3"
+					aria-label="Previous photo"
+				>
+					<svg class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+				</button>
+				<button
+					onclick={scrollNext}
+					class="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white shadow-lg transition-all hover:bg-black/70 sm:right-3 sm:p-3"
+					aria-label="Next photo"
+				>
+					<svg class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+				</button>
+
+				<!-- Counter badge -->
+				<div class="absolute right-2 top-2 rounded-full bg-black/50 px-2 py-0.5 text-xs font-semibold text-white sm:right-3 sm:top-3 sm:px-2.5 sm:py-1">
+					{selectedIndex + 1} / {images.length}
+				</div>
+			{/if}
 		</div>
 
-		<!-- Prev/Next arrows (visible on hover, desktop) -->
+		<!-- Thumbnail strip -->
 		{#if images.length > 1}
-			<button
-				onclick={scrollPrev}
-				class="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2.5 text-white opacity-0 backdrop-blur-sm transition-all duration-200 hover:bg-black/60 group-hover:opacity-100 max-md:hidden"
-				aria-label="Previous photo"
-			>
-				<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
-			</button>
-			<button
-				onclick={scrollNext}
-				class="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2.5 text-white opacity-0 backdrop-blur-sm transition-all duration-200 hover:bg-black/60 group-hover:opacity-100 max-md:hidden"
-				aria-label="Next photo"
-			>
-				<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
-			</button>
-
-			<!-- Dot indicators -->
-			<div class="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
-				{#each images as _, i}
+			<div class="flex gap-2 overflow-x-auto pb-1">
+				{#each images as img, i}
 					<button
 						onclick={() => scrollTo(i)}
-						class="h-2 rounded-full transition-all duration-200 {selectedIndex === i ? 'w-6 bg-white shadow-sm' : 'w-2 bg-white/50 hover:bg-white/75'}"
-						aria-label="Go to photo {i + 1}"
-					/>
+						class="h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all sm:h-16 sm:w-16 {selectedIndex === i ? 'border-primary ring-2 ring-primary/30' : 'border-transparent opacity-60 hover:opacity-100'}"
+					>
+						<img src={img.url} alt={img.caption} class="h-full w-full object-cover" loading="lazy" />
+					</button>
 				{/each}
-			</div>
-		{/if}
-
-		<!-- Photo counter -->
-		{#if images.length > 1}
-			<div class="absolute right-3 top-3 rounded-full bg-black/40 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm">
-				{selectedIndex + 1} / {images.length}
 			</div>
 		{/if}
 	</div>
 {:else}
-	<!-- Empty state -->
 	<div class="img-placeholder flex aspect-[4/3] items-center justify-center rounded-2xl">
 		<div class="text-center text-muted-foreground">
 			<svg class="mx-auto mb-2 h-12 w-12 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
